@@ -4,6 +4,7 @@ import com.anusaha.beatbox.dto.UserRegistrationRequest;
 import com.anusaha.beatbox.dto.UserResponse;
 import com.anusaha.beatbox.service.UserService;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/users")
@@ -16,7 +17,9 @@ public class UserController {
     }
 
     @PostMapping
-    public UserResponse createUser(@RequestBody UserRegistrationRequest request) {
+    public UserResponse createUser(
+            @Valid @RequestBody UserRegistrationRequest request) {
+
         return userService.registerUser(request);
     }
 }

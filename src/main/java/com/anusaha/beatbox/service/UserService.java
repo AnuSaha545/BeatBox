@@ -3,6 +3,7 @@ package com.anusaha.beatbox.service;
 import com.anusaha.beatbox.dto.UserRegistrationRequest;
 import com.anusaha.beatbox.dto.UserResponse;
 import com.anusaha.beatbox.entity.User;
+import com.anusaha.beatbox.exception.EmailAlreadyExistsException;
 import com.anusaha.beatbox.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,9 @@ public class UserService {
     }
 
     public UserResponse registerUser(UserRegistrationRequest request){
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new EmailAlreadyExistsException("Email already registered");
+        }
 
         User user = new User();
 
