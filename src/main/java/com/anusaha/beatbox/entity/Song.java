@@ -1,6 +1,9 @@
 package com.anusaha.beatbox.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 @Entity
 @Table(name = "songs")
@@ -10,22 +13,28 @@ public class Song {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank
     private String title;
 
+    @NotBlank
     private String artist;
 
+    @NotBlank
     private String album;
 
+    @NotBlank
     private String genre;
 
+    @NotNull
+    @Positive
     private Integer duration;
 
+    @NotBlank
     private String audioUrl;
 
     public Song() {
     }
 
-    // getters and setters
     public Long getId() {
         return id;
     }

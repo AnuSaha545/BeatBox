@@ -4,6 +4,8 @@ import com.anusaha.beatbox.entity.Song;
 import com.anusaha.beatbox.service.SongService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
@@ -31,7 +33,25 @@ public class SongController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public Song addSong(@RequestBody Song song) {
+    public Song addSong(@Valid @RequestBody Song song) {
         return songService.addSong(song);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Song updateSong(
+            @PathVariable Long id,
+            @Valid @RequestBody Song song) {
+
+        return songService.updateSong(id, song);
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> deleteSong(@PathVariable Long id) {
+
+        songService.deleteSong(id);
+
+        return ResponseEntity.ok("Song deleted successfully");
     }
 }
