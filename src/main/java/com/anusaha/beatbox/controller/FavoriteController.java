@@ -1,6 +1,6 @@
 package com.anusaha.beatbox.controller;
 
-import com.anusaha.beatbox.entity.Favorite;
+import com.anusaha.beatbox.dto.FavoriteResponse;
 import com.anusaha.beatbox.service.FavoriteService;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,17 +17,32 @@ public class FavoriteController {
     }
 
     @PostMapping("/{songId}")
-    public Favorite addFavorite(
+    public FavoriteResponse addFavorite(
             @PathVariable Long songId) {
 
         return favoriteService.addFavorite(songId);
     }
 
     @GetMapping
-    public List<Favorite> getFavorites() {
+    public List<FavoriteResponse> getFavorites() {
 
         return favoriteService.getFavorites();
     }
+
+    @GetMapping("/{songId}")
+    public FavoriteResponse getFavoriteBySong(
+            @PathVariable Long songId) {
+
+        return favoriteService.getFavoriteBySong(songId);
+    }
+
+    @GetMapping("/check/{songId}")
+    public boolean isFavorite(
+            @PathVariable Long songId) {
+
+        return favoriteService.isFavorite(songId);
+    }
+
     @DeleteMapping("/{songId}")
     public void removeFavorite(
             @PathVariable Long songId) {

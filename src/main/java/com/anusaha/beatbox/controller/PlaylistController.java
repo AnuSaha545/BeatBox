@@ -1,10 +1,11 @@
 package com.anusaha.beatbox.controller;
 
+import com.anusaha.beatbox.dto.PlaylistResponse;
 import com.anusaha.beatbox.entity.Playlist;
 import com.anusaha.beatbox.service.PlaylistService;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -19,65 +20,37 @@ public class PlaylistController {
     }
 
     @PostMapping
-    public Playlist createPlaylist(@RequestBody Playlist playlist) {
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public PlaylistResponse createPlaylist(
+            @RequestBody Playlist playlist) {
+
         return playlistService.createPlaylist(playlist);
     }
 
     @GetMapping
-    public List<Playlist> getAllPlaylists() {
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public List<PlaylistResponse> getAllPlaylists() {
+
         return playlistService.getAllPlaylists();
     }
 
     @GetMapping("/{id}")
-    public Playlist getPlaylistById(@PathVariable Long id) {
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public PlaylistResponse getPlaylistById(
+            @PathVariable Long id) {
+
         return playlistService.getPlaylistById(id);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<String> deletePlaylist(@PathVariable Long id) {
-
-        playlistService.deletePlaylist(id);
-
-        return ResponseEntity.ok("Playlist deleted");
-    }
-
-    @PostMapping("/{playlistId}/songs/{songId}")
-    public Playlist addSongToPlaylist(
-            @PathVariable Long playlistId,
-            @PathVariable Long songId) {
-
-        return playlistService.addSongToPlaylist(playlistId, songId);
-    }
-    @DeleteMapping("/{playlistId}/songs/{songId}")
-    public Playlist removeSongFromPlaylist(
-            @PathVariable Long playlistId,
-            @PathVariable Long songId) {
-
-        return playlistService.removeSongFromPlaylist(
-                playlistId,
-                songId
-        );
-    }
-    @PutMapping("/{id}")
-    public Playlist updatePlaylist(
-            @PathVariable Long id,
-            @RequestBody Playlist playlist) {
-
-        return playlistService.updatePlaylist(id, playlist);
-    }
-    @GetMapping("/search")
-    public List<Playlist> searchPlaylists(
-            @RequestParam String name) {
-
-        return playlistService.searchPlaylists(name);
-    }
     @GetMapping("/paged")
-    public Page<Playlist> getPlaylists(
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public Page<PlaylistResponse> getPlaylists(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size) {
 
         if (page < 0) {
-            throw new IllegalArgumentException("Page number cannot be negative");
+            throw new IllegalArgumentException(
+                    "Page number cannot be negative");
         }
 
         if (size <= 0 || size > 50) {
@@ -86,5 +59,35 @@ public class PlaylistController {
         }
 
         return playlistService.getPlaylists(page, size);
+    }
+
+    @PostMapping("/{playlistId}/songs/{songId}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public PlaylistResponse addSongToPlaylist(
+            @PathVariable Long playlistId,
+            @PathVariable Long songId) {
+
+        return playlistService.addSongToPlaylist(
+                playlistId,
+                songId);
+    }
+
+    @DeleteMapping("/{playlistId}/songs/{songId}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public PlaylistResponse removeSongFromPlaylist(
+            @PathVariable Long playlistId,
+            @PathVariable Long songId) {
+
+        return playlistService.removeSongFromPlaylist(
+                playlistId,
+                songId);
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public void deletePlaylist(
+            @PathVariable Long id) {
+
+        playlistService.deletePlaylist(id);
     }
 }

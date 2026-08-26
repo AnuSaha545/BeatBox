@@ -1,5 +1,6 @@
 package com.anusaha.beatbox.service;
 
+import com.anusaha.beatbox.dto.FavoriteResponse;
 import com.anusaha.beatbox.entity.Favorite;
 import com.anusaha.beatbox.entity.Song;
 import com.anusaha.beatbox.entity.User;
@@ -30,16 +31,9 @@ public class FavoriteService {
         this.songRepository = songRepository;
     }
 
-    public Favorite addFavorite(Long songId) {
+    public FavoriteResponse addFavorite(Long songId) {
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        String email = authentication.getName();
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found"));
+        User user = getCurrentUser();
 
         Song song = songRepository.findById(songId)
                 .orElseThrow(() ->
@@ -57,32 +51,47 @@ public class FavoriteService {
         favorite.setUser(user);
         favorite.setSong(song);
 
-        return favoriteRepository.save(favorite);
+        Favorite savedFavorite = favoriteRepository.save(favorite);
+
+        return toResponse(savedFavorite);
     }
 
-    public List<Favorite> getFavorites() {
+    public List<FavoriteResponse> getFavorites() {
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
+        User user = getCurrentUser();
 
-        String email = authentication.getName();
+        return favoriteRepository.findByUserId(user.getId())
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
 
-        User user = userRepository.findByEmail(email)
+    public FavoriteResponse getFavoriteBySong(Long songId) {
+
+        User user = getCurrentUser();
+
+        Favorite favorite = favoriteRepository
+                .findByUserIdAndSongId(user.getId(), songId)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found"));
+                        new ResourceNotFoundException(
+                                "Song is not in favorites"));
 
-        return favoriteRepository.findByUserId(user.getId());
+        return toResponse(favorite);
     }
+
+    public boolean isFavorite(Long songId) {
+
+        User user = getCurrentUser();
+
+        return favoriteRepository.existsByUserIdAndSongId(
+                user.getId(),
+                songId
+        );
+    }
+
     public void removeFavorite(Long songId) {
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        String email = authentication.getName();
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found"));
+        User user = getCurrentUser();
 
         Favorite favorite = favoriteRepository
                 .findByUserIdAndSongId(user.getId(), songId)
@@ -91,5 +100,31 @@ public class FavoriteService {
                                 "Song is not in favorites"));
 
         favoriteRepository.delete(favorite);
+    }
+
+    private User getCurrentUser() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext()
+                        .getAuthentication();
+
+        String email = authentication.getName();
+
+        return userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "User not found"));
+    }
+
+    private FavoriteResponse toResponse(Favorite favorite) {
+
+        Song song = favorite.getSong();
+
+        return new FavoriteResponse(
+                favorite.getId(),
+                song.getId(),
+                song.getTitle(),
+                song.getArtist()
+        );
     }
 }

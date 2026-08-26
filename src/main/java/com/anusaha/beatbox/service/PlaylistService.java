@@ -1,5 +1,7 @@
 package com.anusaha.beatbox.service;
 
+import com.anusaha.beatbox.dto.PlaylistResponse;
+import com.anusaha.beatbox.dto.SongResponse;
 import com.anusaha.beatbox.entity.Playlist;
 import com.anusaha.beatbox.entity.Song;
 import com.anusaha.beatbox.entity.User;
@@ -7,12 +9,12 @@ import com.anusaha.beatbox.exception.ResourceNotFoundException;
 import com.anusaha.beatbox.repository.PlaylistRepository;
 import com.anusaha.beatbox.repository.SongRepository;
 import com.anusaha.beatbox.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 
@@ -33,63 +35,45 @@ public class PlaylistService {
         this.songRepository = songRepository;
     }
 
-    public Playlist createPlaylist(Playlist playlist) {
+    public PlaylistResponse createPlaylist(Playlist playlist) {
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        String email = authentication.getName();
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found"));
+        User user = getCurrentUser();
 
         playlist.setUser(user);
 
-        return playlistRepository.save(playlist);
+        Playlist savedPlaylist =
+                playlistRepository.save(playlist);
+
+        return toResponse(savedPlaylist);
     }
 
-    public List<Playlist> getAllPlaylists() {
+    public List<PlaylistResponse> getAllPlaylists() {
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
+        User user = getCurrentUser();
 
-        String email = authentication.getName();
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found"));
-
-        return playlistRepository.findByUserId(user.getId());
+        return playlistRepository
+                .findByUserId(user.getId())
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
 
-    public Playlist getPlaylistById(Long id) {
+    public PlaylistResponse getPlaylistById(Long id) {
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
+        User user = getCurrentUser();
 
-        String email = authentication.getName();
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found"));
-
-        return playlistRepository.findByIdAndUserId(id, user.getId())
+        Playlist playlist = playlistRepository
+                .findByIdAndUserId(id, user.getId())
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Playlist not found with id: " + id));
+
+        return toResponse(playlist);
     }
 
     public void deletePlaylist(Long id) {
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        String email = authentication.getName();
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found"));
+        User user = getCurrentUser();
 
         Playlist playlist = playlistRepository
                 .findByIdAndUserId(id, user.getId())
@@ -100,120 +84,114 @@ public class PlaylistService {
         playlistRepository.delete(playlist);
     }
 
-    public Playlist addSongToPlaylist(Long playlistId, Long songId) {
+    public PlaylistResponse addSongToPlaylist(
+            Long playlistId,
+            Long songId) {
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        String email = authentication.getName();
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found"));
+        User user = getCurrentUser();
 
         Playlist playlist = playlistRepository
-                .findByIdAndUserId(playlistId, user.getId())
+                .findByIdAndUserId(
+                        playlistId,
+                        user.getId())
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
-                                "Playlist not found with id: " + playlistId));
+                                "Playlist not found with id: "
+                                        + playlistId));
 
         Song song = songRepository.findById(songId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
-                                "Song not found with id: " + songId));
+                                "Song not found with id: "
+                                        + songId));
 
         if (!playlist.getSongs().contains(song)) {
             playlist.getSongs().add(song);
         }
 
-        return playlistRepository.save(playlist);
+        Playlist savedPlaylist =
+                playlistRepository.save(playlist);
+
+        return toResponse(savedPlaylist);
     }
 
-    public Playlist removeSongFromPlaylist(Long playlistId, Long songId) {
+    public PlaylistResponse removeSongFromPlaylist(
+            Long playlistId,
+            Long songId) {
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        String email = authentication.getName();
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found"));
+        User user = getCurrentUser();
 
         Playlist playlist = playlistRepository
-                .findByIdAndUserId(playlistId, user.getId())
+                .findByIdAndUserId(
+                        playlistId,
+                        user.getId())
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
-                                "Playlist not found with id: " + playlistId));
+                                "Playlist not found with id: "
+                                        + playlistId));
 
         Song song = songRepository.findById(songId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
-                                "Song not found with id: " + songId));
-
-        if (!playlist.getSongs().contains(song)) {
-            throw new ResourceNotFoundException(
-                    "Song is not present in playlist");
-        }
+                                "Song not found with id: "
+                                        + songId));
 
         playlist.getSongs().remove(song);
 
-        return playlistRepository.save(playlist);
+        Playlist savedPlaylist =
+                playlistRepository.save(playlist);
+
+        return toResponse(savedPlaylist);
     }
-    public Playlist updatePlaylist(Long id, Playlist updatedPlaylist) {
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
+    public Page<PlaylistResponse> getPlaylists(
+            int page,
+            int size) {
 
-        String email = authentication.getName();
+        User user = getCurrentUser();
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found"));
-
-        Playlist playlist = playlistRepository
-                .findByIdAndUserId(id, user.getId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Playlist not found with id: " + id));
-
-        playlist.setName(updatedPlaylist.getName());
-
-        return playlistRepository.save(playlist);
-    }
-    public List<Playlist> searchPlaylists(String name) {
-
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        String email = authentication.getName();
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found"));
+        Pageable pageable =
+                PageRequest.of(page, size);
 
         return playlistRepository
-                .findByUserIdAndNameContainingIgnoreCase(
-                        user.getId(),
-                        name
-                );
+                .findByUserId(user.getId(), pageable)
+                .map(this::toResponse);
     }
-    public Page<Playlist> getPlaylists(int page, int size) {
+
+    private User getCurrentUser() {
 
         Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
+                SecurityContextHolder.getContext()
+                        .getAuthentication();
 
         String email = authentication.getName();
 
-        User user = userRepository.findByEmail(email)
+        return userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found"));
+                        new ResourceNotFoundException(
+                                "User not found"));
+    }
 
-        Pageable pageable = PageRequest.of(page, size);
+    private PlaylistResponse toResponse(
+            Playlist playlist) {
 
-        return playlistRepository.findByUserId(
-                user.getId(),
-                pageable
+        List<SongResponse> songs = playlist.getSongs()
+                .stream()
+                .map(song -> new SongResponse(
+                        song.getId(),
+                        song.getTitle(),
+                        song.getArtist(),
+                        song.getAlbum(),
+                        song.getGenre(),
+                        song.getDuration(),
+                        song.getAudioUrl()
+                ))
+                .toList();
+
+        return new PlaylistResponse(
+                playlist.getId(),
+                playlist.getName(),
+                songs
         );
     }
 }

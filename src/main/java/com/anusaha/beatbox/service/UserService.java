@@ -7,7 +7,7 @@ import com.anusaha.beatbox.exception.EmailAlreadyExistsException;
 import com.anusaha.beatbox.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import com.anusaha.beatbox.dto.UserResponse;
+
 
 @Service
 public class UserService {
